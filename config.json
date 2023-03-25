@@ -1,0 +1,9 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 3000
+  },
+  "auth": {
+    "JWT_SECRET": "e5e16ad1-2ccd-46af-9c78-4374109ab034"
+  }
+}
