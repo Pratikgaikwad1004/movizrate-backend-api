@@ -147,4 +147,46 @@ router.post("/addmovieactor", async (req, res) => {
 });
 
 
+router.post("/getlatestmovies", async (req, res) => {
+    try {
+        const movies = await Movie.find({ type: "movie" }).sort({ _id: -1 }).limit(10);
+        if (!movies) {
+            return res.status(400).json({ error: "Can't get movies" })
+        }
+        res.json({ movies: movies });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/getmoviecast/:movieid", async (req, res) => {
+    try {
+        const movieactors = await MovieActors.find({ movieId: req.params.movieid });
+        if (movieactors.length === 0) {
+            return res.status(400).json({ error: "Can't get movie actors" })
+        }
+
+        const actors = await Actor.find({
+            _id: movieactors.map((ele) => {
+                return ele.actorId;
+            })
+        })
+        res.json({ actors: actors });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/getlatesttvseries", async (req, res) => {
+    try {
+        const movies = await Movie.find({ type: "tvseries" }).sort({ _id: -1 }).limit(10);
+        if (!movies) {
+            return res.status(400).json({ error: "Can't get TV-Series" })
+        }
+        res.json({ series: movies });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
 module.exports = router;

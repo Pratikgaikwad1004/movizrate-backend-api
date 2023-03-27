@@ -32,6 +32,7 @@ const MovieSchema = new Schema({
     },
     rating: {
         type: Number,
+        default: 0
     }
 });
 
