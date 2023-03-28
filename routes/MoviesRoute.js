@@ -6,6 +6,7 @@ const multer = require("multer");
 const Actor = require("../models/ActorsSchema");
 const MovieActors = require("../models/MovieActors");
 const Movie = require("../models/MovieSchema");
+const Ott = require("../models/OTTSchema");
 
 // Code for upload image using multer
 const storageImage = multer.diskStorage({
@@ -95,7 +96,7 @@ router.post("/addactor", async (req, res) => {
 router.post("/searchactor/:name", async (req, res) => {
     try {
         const actor = await Actor.find({ name: { "$regex": req.params.name, "$options": "i" } });
-        console.log(actor);
+        // console.log(actor);
 
         if (actor.length === 0) {
             return res.status(400).json({ msg: "No actors" })
@@ -111,7 +112,7 @@ router.post("/searchactor/:name", async (req, res) => {
 router.post("/searchmovie/:name", async (req, res) => {
     try {
         const movie = await Movie.find({ name: { "$regex": req.params.name, "$options": "i" } });
-        console.log(movie);
+        // console.log(movie);
 
         if (movie.length === 0) {
             return res.status(400).json({ msg: "No actors" })
@@ -188,5 +189,86 @@ router.post("/getlatesttvseries", async (req, res) => {
         console.log(error);
     }
 });
+
+router.post("/getmovie/:movieid", async (req, res) => {
+    try {
+        const movie = await Movie.findById(req.params.movieid)
+        if (!movie) {
+            return res.status(400).json({ error: "Can't get TV-Series" })
+        }
+        res.json({ movie: movie });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+
+router.post("/addott", async (req, res) => {
+    try {
+
+        const { movieID, ottname } = req.body
+
+        if (!movieID) {
+            return res.status(400).json({ error: "Enter movieID" })
+        }
+
+        if (!ottname) {
+            return res.status(400).json({ error: "Enter ottname" })
+        }
+        const movie = await Ott.findOne({ movieId: movieID, ottname: ottname });
+        if (movie) {
+            return res.status(400).json({ error: "Movie Already Added" })
+        }
+
+        const addmovie = Ott.create({
+            movieId: req.body.movieID,
+            ottname: req.body.ottname
+        })
+
+        if (addmovie) {
+            return res.json({ status: true });
+        }
+
+        res.status(400).json({ msg: "Not Uploaded" })
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+
+router.post("/getottmovies", async (req, res) => {
+    try {
+
+        const primevideo = await Ott.find({ ottname: "primevideo" }).sort({ _id: -1 }).limit(10);
+        const netflix = await Ott.find({ ottname: "netflix" }).sort({ _id: -1 }).limit(10);
+        const hotstar = await Ott.find({ ottname: "hotstar" }).sort({ _id: -1 }).limit(10);
+
+        const primevideoData = await Movie.find({
+            _id: primevideo.map((ele) => {
+                return ele.movieId;
+            })
+        });
+
+        const netflixData = await Movie.find({
+            _id: netflix.map((ele) => {
+                return ele.movieId;
+            })
+        });
+
+        const hotstarData = await Movie.find({
+            _id: hotstar.map((ele) => {
+                return ele.movieId;
+            })
+        });
+
+        console.log(hotstarData);
+
+        res.json({ primevideo: primevideoData, netflix: netflixData, hotstar: hotstarData });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+
 
 module.exports = router;
