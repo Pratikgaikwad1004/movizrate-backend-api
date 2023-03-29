@@ -7,6 +7,8 @@ const Actor = require("../models/ActorsSchema");
 const MovieActors = require("../models/MovieActors");
 const Movie = require("../models/MovieSchema");
 const Ott = require("../models/OTTSchema");
+const getuser = require("../middleware/getuser");
+const Rating = require("../models/RatingSchema");
 
 // Code for upload image using multer
 const storageImage = multer.diskStorage({
@@ -261,14 +263,67 @@ router.post("/getottmovies", async (req, res) => {
             })
         });
 
-        console.log(hotstarData);
-
         res.json({ primevideo: primevideoData, netflix: netflixData, hotstar: hotstarData });
     } catch (error) {
         console.log(error);
     }
 });
 
+
+router.post("/addrating", getuser, async (req, res) => {
+    try {
+        const user = req.user;
+        const movie = req.body.movie;
+        const rating = req.body.rating;
+
+        const checkRating = await Rating.findOne({ movieId: movie, userId: user.id })
+
+        if (!rating || !movie) {
+            return res.status(400).json({ error: "Fields are empty" })
+        }
+
+        const ratemovie = await Movie.findById(movie);
+        if (!checkRating) {
+
+            ratemovie instanceof Movie
+            ratemovie.totalratings = ratemovie.totalratings + 1;
+            ratemovie.rating = ratemovie.rating + rating;
+
+            await ratemovie.save();
+
+            const ratings = await Rating.create({
+                userId: user.id,
+                movieId: movie,
+                rating: rating
+            });
+
+            if (ratings) {
+                return res.send(true);
+            }
+        } else {
+            return res.json({ msg: "Rating already exists" });
+        }
+
+        res.send(true)
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+router.post("/getratedmovie/:movieId", getuser, async (req, res) => {
+    try {
+        const user = req.user.id
+
+        const rating = await Rating.findOne({ movieId: req.params.movieId, userId: user });
+
+        if (!rating) {
+            return res.send(false);
+        }
+        res.json({ rating: rating.rating });
+    } catch (error) {
+        console.log(error);
+    }
+})
 
 
 module.exports = router;

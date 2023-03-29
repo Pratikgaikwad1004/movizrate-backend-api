@@ -33,6 +33,10 @@ const MovieSchema = new Schema({
     rating: {
         type: Number,
         default: 0
+    },
+    totalratings: {
+        type: Number,
+        default: 0
     }
 });
 
