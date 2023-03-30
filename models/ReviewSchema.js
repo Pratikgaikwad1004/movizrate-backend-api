@@ -15,6 +15,10 @@ const ReviewSchema = new Schema({
     review: {
         type: String,
         required: true
+    },
+    name: {
+        type: String,
+        required: true
     }
 });
 

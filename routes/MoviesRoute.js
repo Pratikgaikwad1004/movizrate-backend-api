@@ -10,6 +10,7 @@ const Ott = require("../models/OTTSchema");
 const getuser = require("../middleware/getuser");
 const Rating = require("../models/RatingSchema");
 const Review = require("../models/ReviewSchema");
+const User = require("../models/UserSchema");
 
 // Code for upload image using multer
 const storageImage = multer.diskStorage({
@@ -341,10 +342,13 @@ router.post("/addreview/:movieID", getuser, async (req, res) => {
             return res.json({ error: "Review already exists" });
         }
 
+        const myuser = await User.findById(user);
+
         const newreview = await Review.create({
             movieId: req.params.movieID,
             userId: user,
-            review: review
+            review: review,
+            name: myuser.name
         });
 
         if (!newreview) {
@@ -352,6 +356,16 @@ router.post("/addreview/:movieID", getuser, async (req, res) => {
         }
 
         res.send(true);
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+router.post("/getmoviereviews/:movieID", async (req, res) => {
+    try {
+        const reviews = await Review.find({ movieId: req.params.movieID }).sort({ _id: -1 }).select("-userId").select("-movieId");
+
+        res.json({ reviews: reviews });
     } catch (error) {
         console.log(error);
     }
