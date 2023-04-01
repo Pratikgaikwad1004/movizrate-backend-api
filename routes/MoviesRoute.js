@@ -12,6 +12,7 @@ const Rating = require("../models/RatingSchema");
 const Review = require("../models/ReviewSchema");
 const User = require("../models/UserSchema");
 const Playlist = require("../models/PlaylistSchema");
+const Carousel = require("../models/CarouselSchema");
 
 // Code for upload image using multer
 const storageImage = multer.diskStorage({
@@ -51,7 +52,7 @@ router.delete("/deleteimage/:name", (req, res) => {
 
 
 router.post("/uploadmovie", async (req, res) => {
-    const { image, posterImage, name, genre, type, videoID, desc } = req.body;
+    const { image, posterImage, name, genre, type, videoID, desc, upcomming } = req.body;
 
     try {
         const movie = await Movie.create({
@@ -61,7 +62,8 @@ router.post("/uploadmovie", async (req, res) => {
             genre: genre,
             desc: desc,
             type: type,
-            videoID: videoID
+            videoID: videoID,
+            upcomming: upcomming
         });
 
         if (!movie) {
@@ -155,7 +157,7 @@ router.post("/addmovieactor", async (req, res) => {
 
 router.post("/getlatestmovies", async (req, res) => {
     try {
-        const movies = await Movie.find({ type: "movie" }).sort({ _id: -1 }).limit(10);
+        const movies = await Movie.find({ type: "movie", upcomming: false }).sort({ _id: -1 }).limit(10);
         if (!movies) {
             return res.status(400).json({ error: "Can't get movies" })
         }
@@ -185,7 +187,7 @@ router.post("/getmoviecast/:movieid", async (req, res) => {
 
 router.post("/getlatesttvseries", async (req, res) => {
     try {
-        const movies = await Movie.find({ type: "tvseries" }).sort({ _id: -1 }).limit(10);
+        const movies = await Movie.find({ type: "tvseries", upcomming: false }).sort({ _id: -1 }).limit(10);
         if (!movies) {
             return res.status(400).json({ error: "Can't get TV-Series" })
         }
@@ -415,6 +417,86 @@ router.post("/getallplaylistmovies", getuser, async (req, res) => {
 
     } catch (error) {
         console.log(error);
+    }
+})
+
+router.post("/getupcommingmovies", async (req, res) => {
+    try {
+        const movies = await Movie.find({ upcomming: true }).sort({ _id: -1 }).limit(10);
+        if (!movies) {
+            return res.status(400).json({ error: "Can't get TV-Series" })
+        }
+        res.json({ upcomming: movies });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/addincarousel/:movieID", async (req, res) => {
+    try {
+        const movieID = req.params.movieID;
+
+        const movie = await Movie.findById(movieID);
+        if (!movie) {
+            return res.status(400).json({ error: "Movie not found" });
+        }
+
+        const oldcarousel = await Carousel.findOne({ movieId: movieID });
+
+        if (oldcarousel) {
+            return res.status(400).json({ error: "Carousel already exists" });
+        }
+        const carousel = await Carousel.create({
+            movieId: movieID
+        });
+        if (!carousel) {
+            return res.status(400).json({ error: "Can't add carousel" });
+        }
+
+        res.json(true);
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/getcarouselmovies", async (req, res) => {
+    try {
+        const carouselmovies = await Carousel.find({});
+
+        if (!carouselmovies) {
+            return res.status(400).json({ error: "Can't get carousel movies" });
+        }
+
+        const movies = await Movie.find({
+            _id: carouselmovies.map(ele => {
+                return ele.movieId;
+            })
+        });
+
+        if (!movies) {
+            return res.status(400).json({ error: "Can't get carousel movies" });
+        }
+
+
+        res.json({ movies: movies });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.delete("/deletecarouselmovie/:movieID", async (req, res) => {
+    try {
+        const movieID = req.params.movieID;
+
+        const carousel = await Carousel.findOneAndDelete({ movieId: movieID });
+
+        if (!carousel) {
+            return res.status(400).json({ error: "Can't delete carousel movie" });
+        }
+
+        res.send(true)
+    } catch (error) {
+
     }
 })
 

@@ -37,6 +37,10 @@ const MovieSchema = new Schema({
     totalratings: {
         type: Number,
         default: 0
+    },
+    upcomming: {
+        type: Boolean,
+        default: false
     }
 });
 
