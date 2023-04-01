@@ -11,6 +11,7 @@ const getuser = require("../middleware/getuser");
 const Rating = require("../models/RatingSchema");
 const Review = require("../models/ReviewSchema");
 const User = require("../models/UserSchema");
+const Playlist = require("../models/PlaylistSchema");
 
 // Code for upload image using multer
 const storageImage = multer.diskStorage({
@@ -366,6 +367,52 @@ router.post("/getmoviereviews/:movieID", async (req, res) => {
         const reviews = await Review.find({ movieId: req.params.movieID }).sort({ _id: -1 }).select("-userId").select("-movieId");
 
         res.json({ reviews: reviews });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/addinplaylist/:movieID", getuser, async (req, res) => {
+    try {
+        const user = req.user.id;
+        const movieID = req.params.movieID;
+
+        const playlist = await Playlist.findOne({ userId: user, movieId: movieID });
+
+        if (playlist) {
+            return res.json({ error: "Movie already in playlist" });
+        }
+
+        const newplaylist = await Playlist.create({
+            movieId: movieID,
+            userId: user
+        });
+
+        if (!newplaylist) {
+            return res.json({ error: "Movie not added to playlist" });
+        }
+
+        res.send(true);
+
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/getallplaylistmovies", getuser, async (req, res) => {
+    try {
+        const user = req.user.id;
+
+        const playlist = await Playlist.find({ userId: user });
+
+        const movies = await Movie.find({
+            _id: playlist.map((ele) => {
+                return ele.movieId;
+            })
+        });
+
+        res.json({ playlist: movies });
+
     } catch (error) {
         console.log(error);
     }
