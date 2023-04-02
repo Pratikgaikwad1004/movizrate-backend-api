@@ -498,6 +498,24 @@ router.delete("/deletecarouselmovie/:movieID", async (req, res) => {
     } catch (error) {
 
     }
+});
+
+router.delete("/deletefromplaylist/:movieID", getuser, async (req, res) => {
+    try {
+        const movieID = req.params.movieID;
+        const user = req.user.id;
+
+        const playlist = await Playlist.findOneAndDelete({ movieId: movieID, userId: user });
+
+        if (!playlist) {
+            return res.status(400).json({ error: "Some error occured" });
+        }
+
+        res.send(true);
+
+    } catch (error) {
+        console.log(error);
+    }
 })
 
 module.exports = router;
