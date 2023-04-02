@@ -503,7 +503,7 @@ router.delete("/deletecarouselmovie/:movieID", async (req, res) => {
 router.delete("/deletefromplaylist/:movieID", getuser, async (req, res) => {
     try {
         const movieID = req.params.movieID;
-        const user = req.user.id;
+        const user = req.user;
 
         const playlist = await Playlist.findOneAndDelete({ movieId: movieID, userId: user });
 
@@ -516,6 +516,65 @@ router.delete("/deletefromplaylist/:movieID", getuser, async (req, res) => {
     } catch (error) {
         console.log(error);
     }
-})
+});
+
+router.post("/getmostratedmovies", async (req, res) => {
+    try {
+        const movies = await Movie.find({ type: "movie" }).sort({ "totalratings": -1 }).limit(10);
+
+        res.send(movies)
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/getmostratedtvseries", async (req, res) => {
+    try {
+        const movies = await Movie.find({ type: "tvseries" }).sort({ "totalratings": -1 }).limit(10);
+
+        res.send(movies)
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.post("/getagewiserating/:movieID", async (req, res) => {
+    try {
+        const todayDate = new Date()
+        let year = todayDate.getFullYear();
+
+        const { age } = req.body
+
+        if (!age) {
+            return res.status(400).json({ error: "Some error occured" });
+        }
+
+        const highage = year - age;
+
+        const users = await User.find({}).select("-password");
+
+        const ageWiseUsers = users.filter((ele) => {
+            const userAge = new Date(ele.bdate).getFullYear();
+
+            if (userAge <= highage && userAge >= (highage - 4)) {
+                return ele;
+            }
+            return null;
+        })
+
+        const ratings = await Rating.find({ userId: ageWiseUsers.map(ele => ele._id), movieId: req.params.movieID });
+
+        let totalratings = 0;
+
+        ratings.forEach((ele) => {
+            totalratings += ele.rating;
+        })
+
+        res.send({ rating: parseFloat(totalratings / ratings.length) })
+    } catch (error) {
+        console.log(error);
+    }
+});
+
 
 module.exports = router;
