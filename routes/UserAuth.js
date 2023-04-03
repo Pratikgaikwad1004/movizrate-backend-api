@@ -275,6 +275,46 @@ router.post("/changeforgottenpassword", async (req, res) => {
   } catch (error) {
     console.log(error)
   }
-})
+});
+
+router.post("/getusers/:email", getuser, async (req, res) => {
+  try {
+    const user = req.user.id;
+
+    const oldUser = await User.findById(user);
+
+    if (!oldUser.admin) {
+      return res.status(401).json({ error: "Unauthorized to create new user." });
+    }
+
+    const users = await User.find({ email: { "$regex": req.params.email, "$options": "i" } });
+
+    res.json({ users: users });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.post("/createadmin/:email", getuser, async (req, res) => {
+  try {
+    const user = req.user.id;
+
+    const oldUser = await User.findById(user);
+
+    if (!oldUser.admin) {
+      return res.status(401).json({ error: "Unauthorized to create new user." });
+    }
+
+    const users = await User.findOne({ email: req.params.email });
+
+    users instanceof User
+    users.admin = true;
+    await users.save()
+
+    res.json({ msg : "Success." });
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 module.exports = router;
