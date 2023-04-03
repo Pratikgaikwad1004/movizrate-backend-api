@@ -61,7 +61,7 @@ router.post(
 
       const authtoken = jwt.sign(data, JWT_SECRET);
       const mail = await sendMail(user);
-      console.log(mail);
+      // console.log(mail);
       return res
         .status(200)
         .json({ message: "Account created ", authtoken: authtoken, otp: mail });
@@ -165,7 +165,7 @@ router.post("/verifyuser", getuser, async (req, res) => {
 
     // Finding user by id without password
     let user = await User.findById(user_id).select("-password");
-    console.log(user);
+    // console.log(user);
     if (!user) {
       return res.status(404).json({ msg: "User Not Found" });
     }
