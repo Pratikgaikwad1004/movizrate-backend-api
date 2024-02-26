@@ -13,6 +13,9 @@ const Review = require("../models/ReviewSchema");
 const User = require("../models/UserSchema");
 const Playlist = require("../models/PlaylistSchema");
 const Carousel = require("../models/CarouselSchema");
+const { log } = require("console");
+const config = require("../config.json");
+const axios = require('axios');
 
 // Code for upload image using multer
 const storageImage = multer.diskStorage({
@@ -37,7 +40,7 @@ router.post("/uploadimage", uploadImage.single("file"), (req, res) => {
         res.status(400).json({ msg: "No file found" });
     }
     res.json({
-        filePath: `http://localhost:3000/${req.file.filename}`,
+        filePath: `${config.server.domain}/${req.file.filename}`,
         fileName: req.file.filename,
         msg: "Image uploaded",
     });
@@ -154,13 +157,192 @@ router.post("/addmovieactor", async (req, res) => {
     }
 });
 
+const getCarouselMovies = async () => {
+    const carouselmovies = await Carousel.find({});
+
+    if (!carouselmovies) {
+        return res.status(400).json({ error: "Can't get carousel movies" });
+    }
+
+    const movies = await Movie.find({
+        _id: carouselmovies.map(ele => {
+            return ele.movieId;
+        })
+    });
+
+    return new Promise(function (resolve, reject) {
+        resolve(movies)
+    })
+}
+
+router.post("/gethomemovies", async (req, res) => {
+    try {
+
+        const latestmovies = await Movie.find({ type: "movie", upcomming: false }).sort({ _id: -1 }).limit(10);
+
+        const latesttvseries = await Movie.find({ type: "tvseries", upcomming: false }).sort({ _id: -1 }).limit(10);
+
+        const mostratedmovies = await Movie.find({ type: "movie" }).sort({ "totalratings": -1 }).limit(10);
+
+        const mostratedtvseries = await Movie.find({ type: "tvseries" }).sort({ "totalratings": -1 }).limit(10);
+
+        const carousel = await getCarouselMovies();
+        // log(carousel)
+        res.json({ latestmovies: latestmovies, latesttvseries: latesttvseries, mostratedmovies: mostratedmovies, mostratedtvseries: mostratedtvseries, carouselmovies: carousel })
+
+    } catch (error) {
+        log(error);
+    }
+});
+
+const ageRating15 = async (movieID) => {
+    try {
+        const todayDate = new Date()
+        let year = todayDate.getFullYear();
+
+        const age = 15;
+
+        const highage = year - age;
+
+        const users = await User.find({}).select("-password");
+
+        const ageWiseUsers = users.filter((ele) => {
+            const userAge = new Date(ele.bdate).getFullYear();
+
+            if (userAge <= highage && userAge >= (highage - 4)) {
+                return ele;
+            }
+            return null;
+        })
+
+        const ratings = await Rating.find({ userId: ageWiseUsers.map(ele => ele._id), movieId: movieID });
+
+        let totalratings = 0;
+
+        ratings.forEach((ele) => {
+            totalratings += ele.rating;
+        })
+        log(totalratings)
+        return new Promise(function (resolve, reject) {
+            resolve(parseFloat(totalratings / ratings.length));
+        })
+    } catch (error) {
+        log(error)
+    }
+}
+const ageRating20 = async (movieID) => {
+    try {
+        const todayDate = new Date()
+        let year = todayDate.getFullYear();
+
+        const age = 20;
+
+        const highage = year - age;
+
+        const users = await User.find({}).select("-password");
+        
+        const ageWiseUsers = users.filter((ele) => {
+            const userAge = new Date(ele.bdate).getFullYear();
+            
+            if (userAge <= highage && userAge >= (highage - 4)) {
+                return ele;
+            }
+            return null;
+        })
+        
+        const ratings = await Rating.find({ userId: ageWiseUsers.map(ele => ele._id), movieId: movieID });
+
+        log(ratings)
+
+        let totalratings = 0;
+
+        ratings.forEach((ele) => {
+            totalratings += ele.rating;
+        })
+        log(totalratings)
+        return new Promise(function (resolve, reject) {
+            resolve(parseFloat(totalratings / ratings.length));
+        })
+    } catch (error) {
+        log(error)
+    }
+}
+const ageRating25 = async (movieID) => {
+    try {
+        const todayDate = new Date()
+        let year = todayDate.getFullYear();
+
+        const age = 25;
+
+        const highage = year - age;
+
+        const users = await User.find({}).select("-password");
+
+        const ageWiseUsers = users.filter((ele) => {
+            const userAge = new Date(ele.bdate).getFullYear();
+
+            if (userAge <= highage && userAge >= (highage - 4)) {
+                return ele;
+            }
+            return null;
+        })
+
+        const ratings = await Rating.find({ userId: ageWiseUsers.map(ele => ele._id), movieId: movieID });
+
+        let totalratings = 0;
+
+        ratings.forEach((ele) => {
+            totalratings += ele.rating;
+        })
+        log(totalratings)
+        return new Promise(function (resolve, reject) {
+            resolve(parseFloat(totalratings / ratings.length));
+        })
+    } catch (error) {
+        log(error)
+    }
+}
+
+router.post("/getwatchmovie/:movieid", async (req, res) => {
+    try {
+        const watchmovie = await Movie.findById(req.params.movieid)
+        if (!watchmovie) {
+            return res.status(400).json({ error: "Can't get movie" })
+        }
+
+        const movieactors = await MovieActors.find({ movieId: req.params.movieid });
+        if (movieactors.length === 0) {
+            return res.status(400).json({ error: "Can't get movie actors" })
+        }
+
+        const actors = await Actor.find({
+            _id: movieactors.map((ele) => {
+                return ele.actorId;
+            })
+        })
+
+        const reviews = await Review.find({ movieId: req.params.movieid }).sort({ _id: -1 }).select("-userId").select("-movieId");
+
+        const age15 = await ageRating15();
+        const age20 = await ageRating20();
+        const age25 = await ageRating25();
+
+        res.json({ watchmovie: watchmovie, actors: actors, reviews: reviews, age15: age15, age20: age20, age25: age25 });
+
+
+    } catch (error) {
+        log(error);
+    }
+});
 
 router.post("/getlatestmovies", async (req, res) => {
     try {
+
         const movies = await Movie.find({ type: "movie", upcomming: false }).sort({ _id: -1 }).limit(10);
         if (!movies) {
             return res.status(400).json({ error: "Can't get movies" })
         }
+
         res.json({ movies: movies });
     } catch (error) {
         console.log(error);
@@ -576,5 +758,11 @@ router.post("/getagewiserating/:movieID", async (req, res) => {
     }
 });
 
-
+router.get("recommendations/:movieName", (req, res) => {
+    try {
+        
+    } catch (error) {
+        console.log(error);
+    }
+})
 module.exports = router;
